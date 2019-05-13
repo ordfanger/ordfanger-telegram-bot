@@ -11,7 +11,10 @@ jobs:
             - v1-pkg-cache
       - run:
           name: Installing Serverless CLI
-          command: sudo npm i -g serverless
+          command: |
+            curl -sL https://deb.nodesource.com/setup_11.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            sudo npm i -g serverless
       - run:
           name: Make (installing golang modules)
           command: make
