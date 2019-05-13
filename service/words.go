@@ -36,7 +36,7 @@ func RecordNewWord(word string) {
 		Word:         word,
 		Language:     "en",
 		PartOfSpeech: "noun",
-		Sentences:    []string{"Hello World", "Hi world"},
+		Sentences:    []string{"Hello World ", "Hi world"},
 	}
 
 	av, err := dynamodbattribute.MarshalMap(record)
