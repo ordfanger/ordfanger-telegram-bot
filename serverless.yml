@@ -10,7 +10,6 @@ provider:
   stackName: ordfanger-telegram-bot-stack
   apiName: ordfanger-telegram-bot
   region: eu-central-1
-  profile: SERVERLESS_USER
   memorySize: 128
   timeout: 5
   deploymentBucket:
