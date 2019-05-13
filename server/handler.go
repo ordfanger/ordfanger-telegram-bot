@@ -3,19 +3,17 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"github.com/ordfanger/ordfanger-telegram-bot/service"
+	// "github.com/ordfanger/ordfanger-telegram-bot/service"
 	"os"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	logger "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
-func init() {
-	logger.SetFormatter(&logger.JSONFormatter{})
-}
+var logger = logrus.New()
 
 type Response events.APIGatewayProxyResponse
 
@@ -23,14 +21,20 @@ type Update struct {
 	Message *tgbotapi.Message
 }
 
-// Server add comment here
+var languageKeyboard = tgbotapi.NewReplyKeyboard(
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton("EN"),
+		tgbotapi.NewKeyboardButton("PL"),
+	),
+)
+
 func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, error) {
 	botAPIKey := os.Getenv("BOT_API_KEY")
 
+	logger.Formatter = &logrus.JSONFormatter{}
+
 	var update Update
-
 	decoder := json.NewDecoder(strings.NewReader(req.Body))
-
 	if err := decoder.Decode(&update); err != nil {
 		logger.Error(err)
 	}
@@ -44,11 +48,11 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 
 	logger.Infof("Authorized on account %s", bot.Self.UserName)
 
-	logger.WithFields(logger.Fields{
+	logger.WithFields(logrus.Fields{
 		"update": &update,
 	}).Info("New update")
 
-	service.RecordNewWord(update.Message.Text)
+	// service.RecordNewWord(update.Message.Text)
 
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
 	msg.ReplyToMessageID = update.Message.MessageID
@@ -63,3 +67,12 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 func main() {
 	lambda.Start(Server)
 }
+
+/*
+1) Welcome message /start
+2) Select the language
+3) Input a new word
+4) Select part of speech
+5) Input sentences
+6) Save! Complete message. Finish flow.
+*/

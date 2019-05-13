@@ -7,7 +7,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	logger "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
+)
+
+type Language int
+
+const (
+	EN Language = iota
+	PL
 )
 
 type Record struct {
@@ -17,12 +24,11 @@ type Record struct {
 	Sentences    []string `json:"sentences"`
 }
 
-func init() {
-	logger.SetFormatter(&logger.JSONFormatter{})
-}
+var logger = logrus.New()
 
 func RecordNewWord(word string) {
-	// Create the dynamo client object
+	logger.Formatter = &logrus.JSONFormatter{}
+
 	sess := session.Must(session.NewSession())
 	svc := dynamodb.New(sess)
 
@@ -33,20 +39,18 @@ func RecordNewWord(word string) {
 		Sentences:    []string{"Hello World", "Hi world"},
 	}
 
-	logger.Info("GOT word")
-
 	av, err := dynamodbattribute.MarshalMap(record)
 	if err != nil {
 		logger.Errorf("Got error marshalling map: %s", err.Error())
 	}
 
-	// Create Item in table and return
 	input := &dynamodb.PutItemInput{
 		Item:      av,
 		TableName: aws.String(os.Getenv("TABLE_NAME")),
 	}
+
 	_, err = svc.PutItem(input)
 	if err != nil {
-		logger.Errorf("Got error  %s", err.Error())
+		logger.Errorf("Got error %s", err.Error())
 	}
 }
