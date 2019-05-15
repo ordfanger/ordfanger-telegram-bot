@@ -12,7 +12,7 @@ const (
 )
 
 // try to create context and set connection in context.
-func DecisionTree(connection *dynamodb.DynamoDB, state *State) error {
+func DecisionTree(connection *dynamodb.DynamoDB, state *State) (*Responses, error) {
 	if state.Step == ReceivedWord {
 		// create bot response
 		// send bot response
@@ -20,33 +20,36 @@ func DecisionTree(connection *dynamodb.DynamoDB, state *State) error {
 
 		state.Step = 2
 
-		err := SaveState(connection, state)
-		logger.Error(err)
+		_ = SaveState(connection, state)
 
-		return nil
+		return &Responses{Text: "Got you word", ReplyKeyboardMarkup: LanguageKeyboard()}, nil
 	}
 
 	if state.Step == ReceivedLanguage {
 		state.Step = 3
-		err := SaveState(connection, state)
-		logger.Error(err)
+		_ = SaveState(connection, state)
 
-		return nil
+		return &Responses{
+			Text:                "Got you language, select part of speech",
+			ReplyKeyboardMarkup: PartOfSpeech(Language(EN)),
+		}, nil
 	}
 
 	if state.Step == ReceivedPartOfSpeech {
 		state.Step = 4
-		err := SaveState(connection, state)
-		logger.Error(err)
+		_ = SaveState(connection, state)
 
-		return nil
+		return &Responses{
+			Text: "Cool, enter sentences",
+		}, nil
 	}
 
 	if state.Step == ReceivedSentences {
 		state.Step = 1
-		err := SaveState(connection, state)
-		logger.Error(err)
+		_ = SaveState(connection, state)
 	}
 
-	return nil
+	return &Responses{
+		Text: "Done!",
+	}, nil
 }

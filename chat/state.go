@@ -16,12 +16,13 @@ var logger = logrus.New()
 type State struct {
 	Step          int    `json:"step"`
 	UserID        int    `json:"userID"`
+	ChatID        int64  `json:"chatID"`
 	UserFirstName string `json:"first_name"`
 	UserLastName  string `json:"last_name"`
 	UserName      string `json:"username"`
 }
 
-func GetChatState(connection *dynamodb.DynamoDB, user *tgbotapi.User) (*State, error) {
+func GetChatState(connection *dynamodb.DynamoDB, message *tgbotapi.Message) (*State, error) {
 	logger.Formatter = &logrus.JSONFormatter{}
 
 	chatState := &State{}
@@ -31,7 +32,7 @@ func GetChatState(connection *dynamodb.DynamoDB, user *tgbotapi.User) (*State, e
 		KeyConditionExpression: aws.String("userID = :userID"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":userID": {
-				N: aws.String(strconv.Itoa(user.ID)),
+				N: aws.String(strconv.Itoa(message.From.ID)),
 			},
 		},
 	}
@@ -45,10 +46,11 @@ func GetChatState(connection *dynamodb.DynamoDB, user *tgbotapi.User) (*State, e
 	if len(out.Items) == 0 {
 		return &State{
 			Step:          1,
-			UserID:        user.ID,
-			UserFirstName: user.FirstName,
-			UserLastName:  user.LastName,
-			UserName:      user.UserName,
+			UserID:        message.From.ID,
+			UserFirstName: message.From.FirstName,
+			UserLastName:  message.From.LastName,
+			UserName:      message.From.UserName,
+			ChatID:        message.Chat.ID,
 		}, nil
 	}
 

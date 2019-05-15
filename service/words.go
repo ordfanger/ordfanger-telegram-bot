@@ -10,13 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Language int
-
-const (
-	EN Language = iota
-	PL
-)
-
 type Record struct {
 	Word         string   `json:"word"`
 	Language     string   `json:"language"`

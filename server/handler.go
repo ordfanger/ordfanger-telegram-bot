@@ -24,13 +24,6 @@ type Update struct {
 	Message *tgbotapi.Message
 }
 
-var languageKeyboard = tgbotapi.NewReplyKeyboard(
-	tgbotapi.NewKeyboardButtonRow(
-		tgbotapi.NewKeyboardButton("EN"),
-		tgbotapi.NewKeyboardButton("PL"),
-	),
-)
-
 func NewDBConnection() *dynamodb.DynamoDB {
 	sess := session.Must(session.NewSession())
 	svc := dynamodb.New(sess)
@@ -57,30 +50,22 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 
 	bot.Debug = true
 
-	logger.Infof("Authorized on account %s", bot.Self.UserName)
-
-	logger.WithFields(logrus.Fields{
-		"update": &update,
-	}).Info("New update")
+	logger.Infof("authorized on account %s", bot.Self.UserName)
+	logger.WithFields(logrus.Fields{"update": &update}).Info("received a new update")
 
 	connection := NewDBConnection()
-	chatState, err := chat.GetChatState(connection, update.Message.From)
+	chatState, err := chat.GetChatState(connection, update.Message)
 	if err != nil {
 		logger.Error(err)
 	}
 
-	err = chat.DecisionTree(connection, chatState)
+	response, err := chat.DecisionTree(connection, chatState)
 	if err != nil {
 		logger.Error(err)
 	}
 	// service.RecordNewWord(update.Message.Text)
 
-	// msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-	// msg.ReplyToMessageID = update.Message.MessageID
-	//
-	// if _, err := bot.Send(msg); err != nil {
-	// 	logger.Error(err)
-	// }
+	chat.Send(bot, response, chatState)
 
 	return Response{StatusCode: 200}, nil
 }
