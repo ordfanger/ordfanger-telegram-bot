@@ -64,7 +64,7 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 	}).Info("New update")
 
 	connection := NewDBConnection()
-	chatState, err := chat.GetChatState(connection, update.Message.From.ID)
+	chatState, err := chat.GetChatState(connection, update.Message.From)
 	if err != nil {
 		logger.Error(err)
 	}
@@ -72,16 +72,15 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 	err = chat.DecisionTree(connection, chatState)
 	if err != nil {
 		logger.Error(err)
-		return Response{StatusCode: 500}, nil
 	}
 	// service.RecordNewWord(update.Message.Text)
 
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-	msg.ReplyToMessageID = update.Message.MessageID
-
-	if _, err := bot.Send(msg); err != nil {
-		logger.Error(err)
-	}
+	// msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+	// msg.ReplyToMessageID = update.Message.MessageID
+	//
+	// if _, err := bot.Send(msg); err != nil {
+	// 	logger.Error(err)
+	// }
 
 	return Response{StatusCode: 200}, nil
 }

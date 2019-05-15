@@ -4,6 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"os"
 	"strconv"
 
@@ -14,13 +15,13 @@ var logger = logrus.New()
 
 type State struct {
 	Step          int    `json:"step"`
-	UserID        int    `json:"id"`
+	UserID        int    `json:"userID"`
 	UserFirstName string `json:"first_name"`
 	UserLastName  string `json:"last_name"`
 	UserName      string `json:"username"`
 }
 
-func GetChatState(connection *dynamodb.DynamoDB, userID int) (*State, error) {
+func GetChatState(connection *dynamodb.DynamoDB, user *tgbotapi.User) (*State, error) {
 	logger.Formatter = &logrus.JSONFormatter{}
 
 	chatState := &State{}
@@ -30,7 +31,7 @@ func GetChatState(connection *dynamodb.DynamoDB, userID int) (*State, error) {
 		KeyConditionExpression: aws.String("userID = :userID"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":userID": {
-				N: aws.String(strconv.Itoa(userID)),
+				N: aws.String(strconv.Itoa(user.ID)),
 			},
 		},
 	}
@@ -42,7 +43,13 @@ func GetChatState(connection *dynamodb.DynamoDB, userID int) (*State, error) {
 	}
 
 	if len(out.Items) == 0 {
-		return &State{Step: 1}, nil
+		return &State{
+			Step:          1,
+			UserID:        user.ID,
+			UserFirstName: user.FirstName,
+			UserLastName:  user.LastName,
+			UserName:      user.UserName,
+		}, nil
 	}
 
 	for _, item := range out.Items {
@@ -56,6 +63,9 @@ func GetChatState(connection *dynamodb.DynamoDB, userID int) (*State, error) {
 }
 
 func SaveState(connection *dynamodb.DynamoDB, state *State) error {
+
+	logger.Info(state)
+
 	av, err := dynamodbattribute.MarshalMap(state)
 	if err != nil {
 		logger.Errorf("error marshalling state: %v", err.Error())

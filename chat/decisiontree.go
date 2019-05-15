@@ -1,6 +1,8 @@
 package chat
 
-import "github.com/aws/aws-sdk-go/service/dynamodb"
+import (
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+)
 
 const (
 	ReceivedWord = iota + 1
@@ -20,18 +22,24 @@ func DecisionTree(connection *dynamodb.DynamoDB, state *State) error {
 
 		err := SaveState(connection, state)
 		logger.Error(err)
+
+		return nil
 	}
 
 	if state.Step == ReceivedLanguage {
 		state.Step = 3
 		err := SaveState(connection, state)
 		logger.Error(err)
+
+		return nil
 	}
 
 	if state.Step == ReceivedPartOfSpeech {
 		state.Step = 4
 		err := SaveState(connection, state)
 		logger.Error(err)
+
+		return nil
 	}
 
 	if state.Step == ReceivedSentences {
