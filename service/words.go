@@ -46,7 +46,7 @@ func RecordNewWord(word string) {
 
 	input := &dynamodb.PutItemInput{
 		Item:      av,
-		TableName: aws.String(os.Getenv("TABLE_NAME")),
+		TableName: aws.String(os.Getenv("WORDS_TABLE")),
 	}
 
 	_, err = svc.PutItem(input)

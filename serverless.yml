@@ -10,6 +10,7 @@ provider:
   stackName: ordfanger-telegram-bot-stack
   apiName: ordfanger-telegram-bot
   region: eu-central-1
+  profile: SERVERLESS_USER
   memorySize: 128
   timeout: 5
   deploymentBucket:
@@ -17,7 +18,8 @@ provider:
   deploymentPrefix: ordfanger-telegram-bot
   versionFunctions: false
   environment:
-    TABLE_NAME: ${opt:stage, self:provider.stage}-words
+    WORDS_TABLE: ${opt:stage, self:provider.stage}-words
+    CHAT_STATE_TABLE: ${opt:stage, self:provider.stage}-chatState
     BOT_API_KEY: ${ssm:BOT_API_KEY}
   iamRoleStatements:
    - Effect: Allow
@@ -62,3 +64,17 @@ resources:
          ReadCapacityUnits: 1
          WriteCapacityUnits: 1
        TableName: '${opt:stage, self:provider.stage}-words'
+   ChatStateDynamoDbTable:
+     Type: 'AWS::DynamoDB::Table'
+     DeletionPolicy: Retain
+     Properties:
+       AttributeDefinitions:
+         - AttributeName: userID
+           AttributeType: N
+       KeySchema:
+         - AttributeName: userID
+           KeyType: HASH
+       ProvisionedThroughput:
+         ReadCapacityUnits: 1
+         WriteCapacityUnits: 1
+       TableName: '${opt:stage, self:provider.stage}-chatState'

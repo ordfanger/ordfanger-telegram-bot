@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/ordfanger/ordfanger-telegram-bot/chat"
 	// "github.com/ordfanger/ordfanger-telegram-bot/service"
 	"os"
 	"strings"
@@ -28,12 +31,20 @@ var languageKeyboard = tgbotapi.NewReplyKeyboard(
 	),
 )
 
+func NewDBConnection() *dynamodb.DynamoDB {
+	sess := session.Must(session.NewSession())
+	svc := dynamodb.New(sess)
+
+	return svc
+}
+
 func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, error) {
 	botAPIKey := os.Getenv("BOT_API_KEY")
 
 	logger.Formatter = &logrus.JSONFormatter{}
 
 	var update Update
+
 	decoder := json.NewDecoder(strings.NewReader(req.Body))
 	if err := decoder.Decode(&update); err != nil {
 		logger.Error(err)
@@ -52,6 +63,17 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 		"update": &update,
 	}).Info("New update")
 
+	connection := NewDBConnection()
+	chatState, err := chat.GetChatState(connection, update.Message.From.ID)
+	if err != nil {
+		logger.Error(err)
+	}
+
+	err = chat.DecisionTree(connection, chatState)
+	if err != nil {
+		logger.Error(err)
+		return Response{StatusCode: 500}, nil
+	}
 	// service.RecordNewWord(update.Message.Text)
 
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
