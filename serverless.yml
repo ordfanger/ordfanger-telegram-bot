@@ -19,7 +19,7 @@ provider:
   versionFunctions: false
   environment:
     WORDS_TABLE: ${opt:stage, self:provider.stage}-words
-    CHAT_STATE_TABLE: ${opt:stage, self:provider.stage}-chatState
+    CHAT_STATE_TABLE: ${opt:stage, self:provider.stage}-chat-state
     BOT_API_KEY: ${ssm:BOT_API_KEY}
   iamRoleStatements:
    - Effect: Allow
@@ -55,10 +55,10 @@ resources:
      DeletionPolicy: Retain
      Properties:
        AttributeDefinitions:
-         - AttributeName: word
+         - AttributeName: id
            AttributeType: S
        KeySchema:
-         - AttributeName: word
+         - AttributeName: id
            KeyType: HASH
        ProvisionedThroughput:
          ReadCapacityUnits: 1
@@ -77,4 +77,4 @@ resources:
        ProvisionedThroughput:
          ReadCapacityUnits: 1
          WriteCapacityUnits: 1
-       TableName: '${opt:stage, self:provider.stage}-chatState'
+       TableName: '${opt:stage, self:provider.stage}-chat-state'

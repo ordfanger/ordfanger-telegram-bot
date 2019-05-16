@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/ordfanger/ordfanger-telegram-bot/chat"
-	// "github.com/ordfanger/ordfanger-telegram-bot/service"
+	"github.com/ordfanger/ordfanger-telegram-bot/internal"
+
 	"os"
 	"strings"
 
@@ -16,7 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var logger = logrus.New()
+var logger = internal.NewLogger()
 
 type Response events.APIGatewayProxyResponse
 
@@ -34,8 +36,6 @@ func NewDBConnection() *dynamodb.DynamoDB {
 func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, error) {
 	botAPIKey := os.Getenv("BOT_API_KEY")
 
-	logger.Formatter = &logrus.JSONFormatter{}
-
 	var update Update
 
 	decoder := json.NewDecoder(strings.NewReader(req.Body))
@@ -48,8 +48,6 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 		logger.Error(err)
 	}
 
-	bot.Debug = true
-
 	logger.Infof("authorized on account %s", bot.Self.UserName)
 	logger.WithFields(logrus.Fields{"update": &update}).Info("received a new update")
 
@@ -59,11 +57,10 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 		logger.Error(err)
 	}
 
-	response, err := chat.DecisionTree(connection, chatState)
+	response, err := chat.DecisionTree(connection, chatState, update.Message)
 	if err != nil {
 		logger.Error(err)
 	}
-	// service.RecordNewWord(update.Message.Text)
 
 	chat.Send(bot, response, chatState)
 
@@ -73,12 +70,3 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 func main() {
 	lambda.Start(Server)
 }
-
-/*
-1) Welcome message /start
-2) Select the language
-3) Input a new word
-4) Select part of speech
-5) Input sentences
-6) Save! Complete message. Finish flow.
-*/

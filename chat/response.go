@@ -16,6 +16,28 @@ const (
 	PL
 )
 
+func GetLanguageFromText(text string) Language {
+	switch text {
+	case "EN":
+		return EN
+	case "PL":
+		return PL
+	default:
+		return EN
+	}
+}
+
+type Message string
+
+const (
+	Welcome                Message = "Hey! Seems you have new words.\nLet's save it!"
+	UnknownCommand         Message = "Unknown command."
+	OnReceivedWord         Message = "Got you word. Pick language to save this word."
+	OnReceivedLanguage     Message = "Nice, then choose part of speech."
+	OnReceivedPartOfSpeech Message = "Type sentences to see how to use your word"
+	OnReceivedSentences    Message = "Brilliant! All info has been saved.\nIf you need to save another word, just type it."
+)
+
 func LanguageKeyboard() *tgbotapi.ReplyKeyboardMarkup {
 	keyboard := tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(

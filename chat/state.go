@@ -1,17 +1,18 @@
 package chat
 
 import (
+	"os"
+	"strconv"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"os"
-	"strconv"
-
+	"github.com/ordfanger/ordfanger-telegram-bot/internal"
 	"github.com/sirupsen/logrus"
 )
 
-var logger = logrus.New()
+var logger = internal.NewLogger()
 
 type State struct {
 	Step          int    `json:"step"`
@@ -20,11 +21,10 @@ type State struct {
 	UserFirstName string `json:"first_name"`
 	UserLastName  string `json:"last_name"`
 	UserName      string `json:"username"`
+	UserInputs    Record `json:"user_inputs"`
 }
 
 func GetChatState(connection *dynamodb.DynamoDB, message *tgbotapi.Message) (*State, error) {
-	logger.Formatter = &logrus.JSONFormatter{}
-
 	chatState := &State{}
 
 	params := &dynamodb.QueryInput{
@@ -51,6 +51,7 @@ func GetChatState(connection *dynamodb.DynamoDB, message *tgbotapi.Message) (*St
 			UserLastName:  message.From.LastName,
 			UserName:      message.From.UserName,
 			ChatID:        message.Chat.ID,
+			UserInputs:    Record{},
 		}, nil
 	}
 
@@ -65,8 +66,7 @@ func GetChatState(connection *dynamodb.DynamoDB, message *tgbotapi.Message) (*St
 }
 
 func SaveState(connection *dynamodb.DynamoDB, state *State) error {
-
-	logger.Info(state)
+	logger.WithFields(logrus.Fields{"state": state}).Info("saving state")
 
 	av, err := dynamodbattribute.MarshalMap(state)
 	if err != nil {
