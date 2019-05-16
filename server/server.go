@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/sirupsen/logrus"
 )
@@ -65,8 +64,4 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 	chat.Send(bot, response, chatState)
 
 	return Response{StatusCode: 200}, nil
-}
-
-func main() {
-	lambda.Start(Server)
 }

@@ -24,13 +24,8 @@ provider:
   iamRoleStatements:
    - Effect: Allow
      Action:
-       - dynamodb:DescribeTable
        - dynamodb:Query
-       - dynamodb:Scan
-       - dynamodb:GetItem
        - dynamodb:PutItem
-       - dynamodb:UpdateItem
-       - dynamodb:DeleteItem
      Resource: "arn:aws:dynamodb:*:*:*"
 
 package:
@@ -40,9 +35,9 @@ package:
    - ./bin/**
 
 functions:
-  server:
-    handler: bin/server
-    name: ${self:provider.stage}-${self:provider.apiName}-server
+  handler:
+    handler: bin/handler
+    name: ${self:provider.stage}-${self:provider.apiName}-handler
     events:
       - http:
           path: bot-updates

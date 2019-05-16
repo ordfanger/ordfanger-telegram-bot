@@ -2,7 +2,7 @@
 
 build:
 	export GO111MODULE=on
-	env GOOS=linux go build -ldflags="-s -w" -o bin/server server/handler.go
+	env GOOS=linux go build -ldflags="-s -w" -o bin/handler handler.go
 
 clean:
 	rm -rf ./bin ./vendor Gopkg.lock
@@ -10,5 +10,5 @@ clean:
 deploy: clean build
 	sls deploy --verbose
 
-deploy-server: clean build
-	sls deploy function -f server
+deploy-lambda: clean build
+	sls deploy function -f handler

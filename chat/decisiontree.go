@@ -14,7 +14,6 @@ const (
 	ReceivedSentences
 )
 
-// try to create context and set connection in context.
 func DecisionTree(connection *dynamodb.DynamoDB, state *State, message *tgbotapi.Message) (*Responses, error) {
 	if message.IsCommand() {
 		command := message.Command()
@@ -44,24 +43,42 @@ func DecisionTree(connection *dynamodb.DynamoDB, state *State, message *tgbotapi
 	}
 
 	if state.Step == ReceivedLanguage {
+		text := message.Text
+
+		language, err := GetLanguageFromText(text)
+		if err != nil {
+			return &Responses{
+				Text:                string(UnknownLanguage),
+				ReplyKeyboardMarkup: LanguageKeyboard(),
+			}, nil
+		}
+
 		state.Step = 3
-		state.UserInputs.Language = message.Text
+		state.UserInputs.Language = text
 
 		if err := SaveState(connection, state); err != nil {
 			logger.Errorf("can't save state", err)
 		}
 
-		language := message.Text
-
 		return &Responses{
 			Text:                string(OnReceivedLanguage),
-			ReplyKeyboardMarkup: PartOfSpeech(GetLanguageFromText(language)),
+			ReplyKeyboardMarkup: PartOfSpeech(language),
 		}, nil
 	}
 
 	if state.Step == ReceivedPartOfSpeech {
+		text := message.Text
+		language, _ := GetLanguageFromText(state.UserInputs.Language)
+
+		if !CheckIfPartOfSpeechExists(language, text) {
+			return &Responses{
+				Text:                string(UnknownPartOfSpeech),
+				ReplyKeyboardMarkup: PartOfSpeech(language),
+			}, nil
+		}
+
 		state.Step = 4
-		state.UserInputs.PartOfSpeech = message.Text
+		state.UserInputs.PartOfSpeech = text
 
 		if err := SaveState(connection, state); err != nil {
 			logger.Errorf("can't save state", err)

@@ -1,12 +1,14 @@
 package chat
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+import (
+	"errors"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+)
 
 type Responses struct {
-	Text                 string
-	InlineKeyboardMarkup *tgbotapi.InlineKeyboardMarkup
-	ReplyKeyboardMarkup  *tgbotapi.ReplyKeyboardMarkup
-	ParseMode            string
+	Text                string
+	ReplyKeyboardMarkup *tgbotapi.ReplyKeyboardMarkup
 }
 
 type Language int
@@ -16,14 +18,14 @@ const (
 	PL
 )
 
-func GetLanguageFromText(text string) Language {
+func GetLanguageFromText(text string) (Language, error) {
 	switch text {
 	case "EN":
-		return EN
+		return EN, nil
 	case "PL":
-		return PL
+		return PL, nil
 	default:
-		return EN
+		return -1, errors.New("unknown language")
 	}
 }
 
@@ -32,11 +34,56 @@ type Message string
 const (
 	Welcome                Message = "Hey! Seems you have new words.\nLet's save it!"
 	UnknownCommand         Message = "Unknown command."
+	UnknownLanguage        Message = "Your language is not supported. Please, select from keyboard."
+	UnknownPartOfSpeech    Message = "Please, select part of speech."
 	OnReceivedWord         Message = "Got you word. Pick language to save this word."
 	OnReceivedLanguage     Message = "Nice, then choose part of speech."
-	OnReceivedPartOfSpeech Message = "Type sentences to see how to use your word"
+	OnReceivedPartOfSpeech Message = "Type sentences to see how to use your word."
 	OnReceivedSentences    Message = "Brilliant! All info has been saved.\nIf you need to save another word, just type it."
 )
+
+var ENPartOfSpeech = []string{
+	"noun",
+	"verb",
+	"adjective",
+	"preposition",
+	"adverb",
+	"pronoun",
+	"conjunction",
+	"interjection",
+}
+
+var PLPartOfSpeech = []string{
+	"rzeczownik",
+	"czasownik",
+	"przymiotnik",
+	"liczebnik",
+	"zaimek",
+	"przysłówek",
+	"przyimek",
+	"spójnik",
+	"wykrzyknik",
+	"partykuła",
+}
+
+func CheckIfPartOfSpeechExists(language Language, partOfSpeech string) bool {
+	var list []string
+
+	if language == EN {
+		list = ENPartOfSpeech
+	}
+
+	if language == PL {
+		list = PLPartOfSpeech
+	}
+
+	for _, b := range list {
+		if b == partOfSpeech {
+			return true
+		}
+	}
+	return false
+}
 
 func LanguageKeyboard() *tgbotapi.ReplyKeyboardMarkup {
 	keyboard := tgbotapi.NewReplyKeyboard(
@@ -51,42 +98,42 @@ func LanguageKeyboard() *tgbotapi.ReplyKeyboardMarkup {
 	return &keyboard
 }
 
+func createPartOfSpeechKeyboard(inRow int, partOfSpeech []string) [][]tgbotapi.KeyboardButton {
+	var keyboard [][]tgbotapi.KeyboardButton
+	var buttons []tgbotapi.KeyboardButton
+
+	for _, value := range partOfSpeech {
+		button := tgbotapi.NewKeyboardButton(value)
+		buttons = append(buttons, button)
+	}
+
+	for i := 0; i < len(partOfSpeech); i += inRow {
+		end := i + inRow
+
+		if end > len(partOfSpeech) {
+			end = len(partOfSpeech)
+		}
+
+		keyboard = append(keyboard, buttons[i:end])
+	}
+
+	return keyboard
+}
+
 func PartOfSpeech(language Language) *tgbotapi.ReplyKeyboardMarkup {
 	var keyboard tgbotapi.ReplyKeyboardMarkup
 
 	if language == EN {
+		buttons := createPartOfSpeechKeyboard(4, ENPartOfSpeech)
 		keyboard = tgbotapi.NewReplyKeyboard(
-			tgbotapi.NewKeyboardButtonRow(
-				tgbotapi.NewKeyboardButton("noun"),
-				tgbotapi.NewKeyboardButton("verb"),
-				tgbotapi.NewKeyboardButton("adjective"),
-				tgbotapi.NewKeyboardButton("preposition"),
-			),
-			tgbotapi.NewKeyboardButtonRow(
-				tgbotapi.NewKeyboardButton("adverb"),
-				tgbotapi.NewKeyboardButton("pronoun"),
-				tgbotapi.NewKeyboardButton("conjunction"),
-				tgbotapi.NewKeyboardButton("interjection"),
-			),
+			buttons...,
 		)
 	}
 
 	if language == PL {
+		buttons := createPartOfSpeechKeyboard(4, PLPartOfSpeech)
 		keyboard = tgbotapi.NewReplyKeyboard(
-			tgbotapi.NewKeyboardButtonRow(
-				tgbotapi.NewKeyboardButton("rzeczownik"),
-				tgbotapi.NewKeyboardButton("czasownik"),
-				tgbotapi.NewKeyboardButton("przymiotnik"),
-				tgbotapi.NewKeyboardButton("liczebnik"),
-				tgbotapi.NewKeyboardButton("zaimek"),
-			),
-			tgbotapi.NewKeyboardButtonRow(
-				tgbotapi.NewKeyboardButton("przysłówek"),
-				tgbotapi.NewKeyboardButton("przyimek"),
-				tgbotapi.NewKeyboardButton("spójnik"),
-				tgbotapi.NewKeyboardButton("wykrzyknik"),
-				tgbotapi.NewKeyboardButton("partykuła"),
-			),
+			buttons...,
 		)
 	}
 
@@ -94,21 +141,13 @@ func PartOfSpeech(language Language) *tgbotapi.ReplyKeyboardMarkup {
 }
 
 func Send(bot *tgbotapi.BotAPI, response *Responses, chatState *State) {
-
 	msg := tgbotapi.NewMessage(chatState.ChatID, response.Text)
 
-	if response.InlineKeyboardMarkup != nil {
-		msg.ReplyMarkup = response.InlineKeyboardMarkup
-	}
 	if response.ReplyKeyboardMarkup != nil {
 		msg.ReplyMarkup = response.ReplyKeyboardMarkup
 	}
 
-	if response.ParseMode != "" {
-		msg.ParseMode = response.ParseMode
-	}
-
-	if response.ReplyKeyboardMarkup == nil && response.InlineKeyboardMarkup == nil {
+	if response.ReplyKeyboardMarkup == nil {
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	}
 
