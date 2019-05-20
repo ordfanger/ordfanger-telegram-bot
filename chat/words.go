@@ -19,7 +19,7 @@ type Record struct {
 	Sentences    []string `json:"sentences"`
 }
 
-func RecordNewWord(state *State) {
+func RecordNewWord(context *Context) {
 	sess := session.Must(session.NewSession())
 	svc := dynamodb.New(sess)
 
@@ -27,15 +27,15 @@ func RecordNewWord(state *State) {
 
 	record := &Record{
 		ID:           uuId.String(),
-		Word:         state.UserInputs.Word,
-		Language:     state.UserInputs.Language,
-		PartOfSpeech: state.UserInputs.PartOfSpeech,
-		Sentences:    state.UserInputs.Sentences,
+		Word:         context.State.UserInputs.Word,
+		Language:     context.State.UserInputs.Language,
+		PartOfSpeech: context.State.UserInputs.PartOfSpeech,
+		Sentences:    context.State.UserInputs.Sentences,
 	}
 
 	av, err := dynamodbattribute.MarshalMap(record)
 	if err != nil {
-		logger.Errorf("error marshalling map: %s", err.Error())
+		context.Logger.Errorf("error marshalling map: %s", err.Error())
 	}
 
 	input := &dynamodb.PutItemInput{
@@ -45,6 +45,6 @@ func RecordNewWord(state *State) {
 
 	_, err = svc.PutItem(input)
 	if err != nil {
-		logger.Errorf("can't save the word %s", err.Error())
+		context.Logger.Errorf("can't save the word %s", err.Error())
 	}
 }

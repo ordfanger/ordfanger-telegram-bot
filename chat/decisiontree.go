@@ -2,9 +2,6 @@ package chat
 
 import (
 	"strings"
-
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 const (
@@ -14,9 +11,9 @@ const (
 	ReceivedSentences
 )
 
-func DecisionTree(connection *dynamodb.DynamoDB, state *State, message *tgbotapi.Message) (*Responses, error) {
-	if message.IsCommand() {
-		command := message.Command()
+func DecisionTree(context *Context) (*Responses, error) {
+	if context.Update.Message.IsCommand() {
+		command := context.Update.Message.Command()
 		response := &Responses{}
 
 		if command == "start" {
@@ -28,12 +25,12 @@ func DecisionTree(connection *dynamodb.DynamoDB, state *State, message *tgbotapi
 		return response, nil
 	}
 
-	if state.Step == ReceivedWord {
-		state.Step = 2
-		state.UserInputs.Word = message.Text
+	if context.State.Step == ReceivedWord {
+		context.State.Step = 2
+		context.State.UserInputs.Word = context.Update.Message.Text
 
-		if err := SaveState(connection, state); err != nil {
-			logger.Errorf("can't save state", err)
+		if err := SaveState(context); err != nil {
+			context.Logger.Errorf("can't save state  %v", err)
 		}
 
 		return &Responses{
@@ -42,8 +39,8 @@ func DecisionTree(connection *dynamodb.DynamoDB, state *State, message *tgbotapi
 		}, nil
 	}
 
-	if state.Step == ReceivedLanguage {
-		text := message.Text
+	if context.State.Step == ReceivedLanguage {
+		text := context.Update.Message.Text
 
 		language, err := GetLanguageFromText(text)
 		if err != nil {
@@ -53,11 +50,11 @@ func DecisionTree(connection *dynamodb.DynamoDB, state *State, message *tgbotapi
 			}, nil
 		}
 
-		state.Step = 3
-		state.UserInputs.Language = text
+		context.State.Step = 3
+		context.State.UserInputs.Language = text
 
-		if err := SaveState(connection, state); err != nil {
-			logger.Errorf("can't save state", err)
+		if err := SaveState(context); err != nil {
+			context.Logger.Errorf("can't save state  %v", err)
 		}
 
 		return &Responses{
@@ -66,9 +63,9 @@ func DecisionTree(connection *dynamodb.DynamoDB, state *State, message *tgbotapi
 		}, nil
 	}
 
-	if state.Step == ReceivedPartOfSpeech {
-		text := message.Text
-		language, _ := GetLanguageFromText(state.UserInputs.Language)
+	if context.State.Step == ReceivedPartOfSpeech {
+		text := context.Update.Message.Text
+		language, _ := GetLanguageFromText(context.State.UserInputs.Language)
 
 		if !CheckIfPartOfSpeechExists(language, text) {
 			return &Responses{
@@ -77,11 +74,11 @@ func DecisionTree(connection *dynamodb.DynamoDB, state *State, message *tgbotapi
 			}, nil
 		}
 
-		state.Step = 4
-		state.UserInputs.PartOfSpeech = text
+		context.State.Step = 4
+		context.State.UserInputs.PartOfSpeech = text
 
-		if err := SaveState(connection, state); err != nil {
-			logger.Errorf("can't save state", err)
+		if err := SaveState(context); err != nil {
+			context.Logger.Errorf("can't save state  %v", err)
 		}
 
 		return &Responses{
@@ -89,16 +86,16 @@ func DecisionTree(connection *dynamodb.DynamoDB, state *State, message *tgbotapi
 		}, nil
 	}
 
-	if state.Step == ReceivedSentences {
-		state.Step = 1
+	if context.State.Step == ReceivedSentences {
+		context.State.Step = 1
 
-		sentences := strings.Split(message.Text, "\n")
-		state.UserInputs.Sentences = sentences
+		sentences := strings.Split(context.Update.Message.Text, "\n")
+		context.State.UserInputs.Sentences = sentences
 
-		RecordNewWord(state)
+		RecordNewWord(context)
 
-		if err := SaveState(connection, state); err != nil {
-			logger.Errorf("can't save state", err)
+		if err := SaveState(context); err != nil {
+			context.Logger.Errorf("can't save state %v", err)
 		}
 	}
 

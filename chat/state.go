@@ -7,24 +7,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"github.com/ordfanger/ordfanger-telegram-bot/internal"
 	"github.com/sirupsen/logrus"
 )
 
-var logger = internal.NewLogger()
-
-type State struct {
-	Step          int    `json:"step"`
-	UserID        int    `json:"userID"`
-	ChatID        int64  `json:"chatID"`
-	UserFirstName string `json:"first_name"`
-	UserLastName  string `json:"last_name"`
-	UserName      string `json:"username"`
-	UserInputs    Record `json:"user_inputs"`
-}
-
-func GetChatState(connection *dynamodb.DynamoDB, message *tgbotapi.Message) (*State, error) {
+func GetChatState(context *Context) (*State, error) {
 	chatState := &State{}
 
 	params := &dynamodb.QueryInput{
@@ -32,32 +18,32 @@ func GetChatState(connection *dynamodb.DynamoDB, message *tgbotapi.Message) (*St
 		KeyConditionExpression: aws.String("userID = :userID"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":userID": {
-				N: aws.String(strconv.Itoa(message.From.ID)),
+				N: aws.String(strconv.Itoa(context.Update.Message.From.ID)),
 			},
 		},
 	}
 
-	out, err := connection.Query(params)
+	out, err := context.Connection.Query(params)
 	if err != nil {
-		logger.Errorf("querying state failed: %v", err.Error())
+		context.Logger.Errorf("querying state failed: %v", err.Error())
 		return nil, err
 	}
 
 	if len(out.Items) == 0 {
 		return &State{
 			Step:          1,
-			UserID:        message.From.ID,
-			UserFirstName: message.From.FirstName,
-			UserLastName:  message.From.LastName,
-			UserName:      message.From.UserName,
-			ChatID:        message.Chat.ID,
+			UserID:        context.Update.Message.From.ID,
+			UserFirstName: context.Update.Message.From.FirstName,
+			UserLastName:  context.Update.Message.From.LastName,
+			UserName:      context.Update.Message.From.UserName,
+			ChatID:        context.Update.Message.Chat.ID,
 			UserInputs:    Record{},
 		}, nil
 	}
 
 	for _, item := range out.Items {
 		if err := dynamodbattribute.UnmarshalMap(item, chatState); err != nil {
-			logger.Errorf("unmarshalMap failed: %v", err.Error())
+			context.Logger.Errorf("unmarshalMap failed: %v", err.Error())
 			return nil, err
 		}
 	}
@@ -65,12 +51,12 @@ func GetChatState(connection *dynamodb.DynamoDB, message *tgbotapi.Message) (*St
 	return chatState, nil
 }
 
-func SaveState(connection *dynamodb.DynamoDB, state *State) error {
-	logger.WithFields(logrus.Fields{"state": state}).Info("saving state")
+func SaveState(context *Context) error {
+	context.Logger.WithFields(logrus.Fields{"state": context.State}).Info("saving state")
 
-	av, err := dynamodbattribute.MarshalMap(state)
+	av, err := dynamodbattribute.MarshalMap(context.State)
 	if err != nil {
-		logger.Errorf("error marshalling state: %v", err.Error())
+		context.Logger.Errorf("error marshalling state: %v", err.Error())
 		return err
 	}
 
@@ -79,9 +65,9 @@ func SaveState(connection *dynamodb.DynamoDB, state *State) error {
 		TableName: aws.String(os.Getenv("CHAT_STATE_TABLE")),
 	}
 
-	_, err = connection.PutItem(input)
+	_, err = context.Connection.PutItem(input)
 	if err != nil {
-		logger.Errorf("error while saving state: %v", err.Error())
+		context.Logger.Errorf("error while saving state: %v", err.Error())
 		return err
 	}
 

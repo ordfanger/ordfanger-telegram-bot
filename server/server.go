@@ -17,15 +17,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var logger = internal.NewLogger()
-
 type Response events.APIGatewayProxyResponse
 
-type Update struct {
-	Message *tgbotapi.Message
-}
-
-func NewDBConnection() *dynamodb.DynamoDB {
+func newDBConnection() *dynamodb.DynamoDB {
 	sess := session.Must(session.NewSession())
 	svc := dynamodb.New(sess)
 
@@ -35,33 +29,39 @@ func NewDBConnection() *dynamodb.DynamoDB {
 func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, error) {
 	botAPIKey := os.Getenv("BOT_API_KEY")
 
-	var update Update
-
-	decoder := json.NewDecoder(strings.NewReader(req.Body))
-	if err := decoder.Decode(&update); err != nil {
-		logger.Error(err)
+	chatContext := &chat.Context{
+		Logger:     internal.NewLogger(),
+		Connection: newDBConnection(),
 	}
 
 	bot, err := tgbotapi.NewBotAPI(botAPIKey)
 	if err != nil {
-		logger.Error(err)
+		chatContext.Logger.Error(err)
 	}
 
-	logger.Infof("authorized on account %s", bot.Self.UserName)
-	logger.WithFields(logrus.Fields{"update": &update}).Info("received a new update")
+	chatContext.Bot = bot
 
-	connection := NewDBConnection()
-	chatState, err := chat.GetChatState(connection, update.Message)
+	decoder := json.NewDecoder(strings.NewReader(req.Body))
+	if err := decoder.Decode(&chatContext.Update); err != nil {
+		chatContext.Logger.Error(err)
+	}
+
+	chatContext.Logger.Infof("authorized on account %s", bot.Self.UserName)
+	chatContext.Logger.WithFields(logrus.Fields{"update": &chatContext.Update}).Info("received a new update")
+
+	chatState, err := chat.GetChatState(chatContext)
 	if err != nil {
-		logger.Error(err)
+		chatContext.Logger.Error(err)
 	}
 
-	response, err := chat.DecisionTree(connection, chatState, update.Message)
+	chatContext.State = chatState
+
+	response, err := chat.DecisionTree(chatContext)
 	if err != nil {
-		logger.Error(err)
+		chatContext.Logger.Error(err)
 	}
 
-	chat.Send(bot, response, chatState)
+	chat.Send(chatContext, response)
 
 	return Response{StatusCode: 200}, nil
 }

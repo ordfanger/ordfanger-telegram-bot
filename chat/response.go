@@ -140,8 +140,8 @@ func PartOfSpeech(language Language) *tgbotapi.ReplyKeyboardMarkup {
 	return &keyboard
 }
 
-func Send(bot *tgbotapi.BotAPI, response *Responses, chatState *State) {
-	msg := tgbotapi.NewMessage(chatState.ChatID, response.Text)
+func Send(context *Context, response *Responses) {
+	msg := tgbotapi.NewMessage(context.State.ChatID, response.Text)
 
 	if response.ReplyKeyboardMarkup != nil {
 		msg.ReplyMarkup = response.ReplyKeyboardMarkup
@@ -151,7 +151,7 @@ func Send(bot *tgbotapi.BotAPI, response *Responses, chatState *State) {
 		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	}
 
-	if _, err := bot.Send(msg); err != nil {
-		logger.Error(err)
+	if _, err := context.Bot.Send(msg); err != nil {
+		context.Logger.Error(err)
 	}
 }
