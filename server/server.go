@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/ordfanger/ordfanger-telegram-bot/chat"
 	"github.com/ordfanger/ordfanger-telegram-bot/internal"
 
@@ -19,19 +17,12 @@ import (
 
 type Response events.APIGatewayProxyResponse
 
-func newDBConnection() *dynamodb.DynamoDB {
-	sess := session.Must(session.NewSession())
-	svc := dynamodb.New(sess)
-
-	return svc
-}
-
 func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, error) {
 	botAPIKey := os.Getenv("BOT_API_KEY")
 
-	chatContext := &chat.Context{
+	chatContext := &chat.Chat{
 		Logger:     internal.NewLogger(),
-		Connection: newDBConnection(),
+		Connection: internal.NewDBConnection(),
 	}
 
 	bot, err := tgbotapi.NewBotAPI(botAPIKey)
@@ -49,19 +40,17 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 	chatContext.Logger.Infof("authorized on account %s", bot.Self.UserName)
 	chatContext.Logger.WithFields(logrus.Fields{"update": &chatContext.Update}).Info("received a new update")
 
-	chatState, err := chat.GetChatState(chatContext)
+	err = chatContext.GetState()
 	if err != nil {
 		chatContext.Logger.Error(err)
 	}
 
-	chatContext.State = chatState
-
-	response, err := chat.DecisionTree(chatContext)
+	response, err := chatContext.DecisionTree()
 	if err != nil {
 		chatContext.Logger.Error(err)
 	}
 
-	chat.Send(chatContext, response)
+	chatContext.Send(response)
 
 	return Response{StatusCode: 200}, nil
 }

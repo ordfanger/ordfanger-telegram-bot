@@ -1,4 +1,4 @@
-# Ordfanger Telegram Bot deployment configuration
+# Ordfanger Telegram Bot deployment configuration.
 
 service: ordfanger-telegram-bot
 frameworkVersion: ">=1.28.0 <2.0.0"

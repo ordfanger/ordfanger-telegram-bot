@@ -6,30 +6,10 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-type Responses struct {
-	Text                string
-	ReplyKeyboardMarkup *tgbotapi.ReplyKeyboardMarkup
-}
-
-type Language int
-
 const (
 	EN Language = iota
 	PL
 )
-
-func GetLanguageFromText(text string) (Language, error) {
-	switch text {
-	case "EN":
-		return EN, nil
-	case "PL":
-		return PL, nil
-	default:
-		return -1, errors.New("unknown language")
-	}
-}
-
-type Message string
 
 const (
 	Welcome                Message = "Hey! Seems you have new words.\nLet's save it!"
@@ -41,6 +21,14 @@ const (
 	OnReceivedPartOfSpeech Message = "Type sentences to see how to use your word."
 	OnReceivedSentences    Message = "Brilliant! All info has been saved.\nIf you need to save another word, just type it."
 )
+
+type Responses struct {
+	Text                string
+	ReplyKeyboardMarkup *tgbotapi.ReplyKeyboardMarkup
+}
+
+type Language int
+type Message string
 
 var ENPartOfSpeech = []string{
 	"noun",
@@ -64,6 +52,17 @@ var PLPartOfSpeech = []string{
 	"spójnik",
 	"wykrzyknik",
 	"partykuła",
+}
+
+func GetLanguageFromText(text string) (Language, error) {
+	switch text {
+	case "EN":
+		return EN, nil
+	case "PL":
+		return PL, nil
+	default:
+		return -1, errors.New("unknown language")
+	}
 }
 
 func CheckIfPartOfSpeechExists(language Language, partOfSpeech string) bool {
@@ -138,20 +137,4 @@ func PartOfSpeech(language Language) *tgbotapi.ReplyKeyboardMarkup {
 	}
 
 	return &keyboard
-}
-
-func Send(context *Context, response *Responses) {
-	msg := tgbotapi.NewMessage(context.State.ChatID, response.Text)
-
-	if response.ReplyKeyboardMarkup != nil {
-		msg.ReplyMarkup = response.ReplyKeyboardMarkup
-	}
-
-	if response.ReplyKeyboardMarkup == nil {
-		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
-	}
-
-	if _, err := context.Bot.Send(msg); err != nil {
-		context.Logger.Error(err)
-	}
 }

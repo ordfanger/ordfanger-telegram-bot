@@ -5,6 +5,7 @@ import (
 	"github.com/ordfanger/ordfanger-telegram-bot/server"
 )
 
+// lambda main handler
 func main() {
 	lambda.Start(server.Server)
 }
