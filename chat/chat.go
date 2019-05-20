@@ -23,6 +23,14 @@ const (
 	ReceivedSentences
 )
 
+type BotAPI interface {
+	Send(chat *Chat, response *Responses)
+}
+
+type Bot struct {
+	*tgbotapi.BotAPI
+}
+
 type Update struct {
 	Message *tgbotapi.Message
 }
@@ -39,7 +47,7 @@ type State struct {
 
 type Chat struct {
 	Logger     *logrus.Logger
-	Bot        *tgbotapi.BotAPI
+	Bot        BotAPI
 	Connection *dynamodb.DynamoDB
 	Update     *Update
 	State      *State
@@ -147,19 +155,7 @@ func (chat *Chat) DecisionTree() (*Responses, error) {
 }
 
 func (chat *Chat) Send(response *Responses) {
-	msg := tgbotapi.NewMessage(chat.State.ChatID, response.Text)
-
-	if response.ReplyKeyboardMarkup != nil {
-		msg.ReplyMarkup = response.ReplyKeyboardMarkup
-	}
-
-	if response.ReplyKeyboardMarkup == nil {
-		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
-	}
-
-	if _, err := chat.Bot.Send(msg); err != nil {
-		chat.Logger.Error(err)
-	}
+	chat.Bot.Send(chat, response)
 }
 
 func (chat *Chat) GetState() error {
@@ -257,5 +253,21 @@ func (chat *Chat) RecordNewWord() {
 	_, err = svc.PutItem(input)
 	if err != nil {
 		chat.Logger.Errorf("can't save the word %s", err.Error())
+	}
+}
+
+func (bot *Bot) Send(chat *Chat, response *Responses) {
+	msg := tgbotapi.NewMessage(chat.State.ChatID, response.Text)
+
+	if response.ReplyKeyboardMarkup != nil {
+		msg.ReplyMarkup = response.ReplyKeyboardMarkup
+	}
+
+	if response.ReplyKeyboardMarkup == nil {
+		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
+	}
+
+	if _, err := bot.BotAPI.Send(msg); err != nil {
+		chat.Logger.Error(err)
 	}
 }

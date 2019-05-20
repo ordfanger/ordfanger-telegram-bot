@@ -30,7 +30,9 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 		chatContext.Logger.Error(err)
 	}
 
-	chatContext.Bot = bot
+	chatContext.Bot = &chat.Bot{
+		BotAPI: bot,
+	}
 
 	decoder := json.NewDecoder(strings.NewReader(req.Body))
 	if err := decoder.Decode(&chatContext.Update); err != nil {
