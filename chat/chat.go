@@ -44,18 +44,18 @@ type Record struct {
 	Sentences    []string `json:"sentences"`
 }
 
-func (chat *Chat) DecisionTree() (*Responses, error) {
+func (chat *Chat) DecisionTree() *Responses {
 	if chat.Update.Message.IsCommand() {
 		command := chat.Update.Message.Command()
 		response := &Responses{}
 
 		if command == "start" {
 			response.Text = string(Welcome)
-			return response, nil
+			return response
 		}
 
 		response.Text = string(UnknownCommand)
-		return response, nil
+		return response
 	}
 
 	if chat.State.Step == ReceivedWord {
@@ -69,7 +69,7 @@ func (chat *Chat) DecisionTree() (*Responses, error) {
 		return &Responses{
 			Text:                string(OnReceivedWord),
 			ReplyKeyboardMarkup: LanguageKeyboard(),
-		}, nil
+		}
 	}
 
 	if chat.State.Step == ReceivedLanguage {
@@ -80,7 +80,7 @@ func (chat *Chat) DecisionTree() (*Responses, error) {
 			return &Responses{
 				Text:                string(UnknownLanguage),
 				ReplyKeyboardMarkup: LanguageKeyboard(),
-			}, nil
+			}
 		}
 
 		chat.State.Step = 3
@@ -93,7 +93,7 @@ func (chat *Chat) DecisionTree() (*Responses, error) {
 		return &Responses{
 			Text:                string(OnReceivedLanguage),
 			ReplyKeyboardMarkup: PartOfSpeech(language),
-		}, nil
+		}
 	}
 
 	if chat.State.Step == ReceivedPartOfSpeech {
@@ -104,7 +104,7 @@ func (chat *Chat) DecisionTree() (*Responses, error) {
 			return &Responses{
 				Text:                string(UnknownPartOfSpeech),
 				ReplyKeyboardMarkup: PartOfSpeech(language),
-			}, nil
+			}
 		}
 
 		chat.State.Step = 4
@@ -116,7 +116,7 @@ func (chat *Chat) DecisionTree() (*Responses, error) {
 
 		return &Responses{
 			Text: string(OnReceivedPartOfSpeech),
-		}, nil
+		}
 	}
 
 	if chat.State.Step == ReceivedSentences {
@@ -134,7 +134,7 @@ func (chat *Chat) DecisionTree() (*Responses, error) {
 
 	return &Responses{
 		Text: string(OnReceivedSentences),
-	}, nil
+	}
 }
 
 func (chat *Chat) Send(response *Responses) {

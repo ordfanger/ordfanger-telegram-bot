@@ -49,7 +49,7 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 		chatContext.Logger.Error(err)
 	}
 
-	response, err := chatContext.DecisionTree()
+	response := chatContext.DecisionTree()
 	if err != nil {
 		chatContext.Logger.Error(err)
 	}
