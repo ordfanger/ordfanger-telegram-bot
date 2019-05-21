@@ -12,16 +12,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// PersistenceLayer interface for data storage.
 type PersistenceLayer interface {
 	GetState(chat *Chat) error
 	SaveState(chat *Chat) error
 	RecordNewWord(chat *Chat)
 }
 
+// DB is DynamoDB implamentation.
 type DB struct {
 	*dynamodb.DynamoDB
 }
 
+// GetState used to getting current chat state for bot decigions.
 func (db *DB) GetState(chat *Chat) error {
 	chatState := &State{}
 
@@ -67,6 +70,7 @@ func (db *DB) GetState(chat *Chat) error {
 	return nil
 }
 
+// SaveState saves chat state.
 func (db *DB) SaveState(chat *Chat) error {
 	chat.Logger.WithFields(logrus.Fields{"state": chat.State}).Info("saving state")
 
@@ -90,14 +94,15 @@ func (db *DB) SaveState(chat *Chat) error {
 	return nil
 }
 
+// RecordNewWord stores final user's information about word.
 func (db *DB) RecordNewWord(chat *Chat) {
 	sess := session.Must(session.NewSession())
 	svc := dynamodb.New(sess)
 
-	uuId := uuid.NewV4()
+	uuID := uuid.NewV4()
 
 	record := &Record{
-		ID:           uuId.String(),
+		ID:           uuID.String(),
 		Word:         chat.State.UserInputs.Word,
 		Language:     chat.State.UserInputs.Language,
 		PartOfSpeech: chat.State.UserInputs.PartOfSpeech,

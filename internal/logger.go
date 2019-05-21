@@ -8,6 +8,7 @@ func init() {
 	logger.Formatter = &logrus.JSONFormatter{}
 }
 
+// NewLogger returns configured logrus instanse.
 func NewLogger() *logrus.Logger {
 	return logger
 }

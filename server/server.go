@@ -15,8 +15,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Response for match APIGateway Proxy Response.
 type Response events.APIGatewayProxyResponse
 
+// Starting poing for chat. All needed instanses created here.
 func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, error) {
 	botAPIKey := os.Getenv("BOT_API_KEY")
 

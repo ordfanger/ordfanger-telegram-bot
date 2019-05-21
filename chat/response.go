@@ -6,11 +6,19 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
+// Language type. Type alias for supported languages.
+type Language int
+
+// Message type. Used for defining bot's responses.
+type Message string
+
+// Supported languages.
 const (
 	EN Language = iota
 	PL
 )
 
+// Bot's response messages.
 const (
 	Welcome                Message = "Hey! Seems you have new words.\nLet's save it!"
 	UnknownCommand         Message = "Unknown command."
@@ -22,14 +30,13 @@ const (
 	OnReceivedSentences    Message = "Brilliant! All info has been saved.\nIf you need to save another word, just type it."
 )
 
+// Responses used to define response text and keyboard for telegram bot.
 type Responses struct {
 	Text                string
 	ReplyKeyboardMarkup *tgbotapi.ReplyKeyboardMarkup
 }
 
-type Language int
-type Message string
-
+// ENPartOfSpeech - defined part of speech for EN language.
 var ENPartOfSpeech = []string{
 	"noun",
 	"verb",
@@ -41,6 +48,7 @@ var ENPartOfSpeech = []string{
 	"interjection",
 }
 
+// PLPartOfSpeech - defined part of speech for PL language.
 var PLPartOfSpeech = []string{
 	"rzeczownik",
 	"czasownik",
@@ -54,6 +62,7 @@ var PLPartOfSpeech = []string{
 	"partykuła",
 }
 
+// GetLanguageFromText returns language type from string.
 func GetLanguageFromText(text string) (Language, error) {
 	switch text {
 	case "EN":
@@ -65,6 +74,7 @@ func GetLanguageFromText(text string) (Language, error) {
 	}
 }
 
+// CheckIfPartOfSpeechExists checks if part of speech defined.
 func CheckIfPartOfSpeechExists(language Language, partOfSpeech string) bool {
 	var list []string
 
@@ -84,6 +94,7 @@ func CheckIfPartOfSpeechExists(language Language, partOfSpeech string) bool {
 	return false
 }
 
+// LanguageKeyboard returns language keyboard.
 func LanguageKeyboard() *tgbotapi.ReplyKeyboardMarkup {
 	keyboard := tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
@@ -119,6 +130,7 @@ func createPartOfSpeechKeyboard(inRow int, partOfSpeech []string) [][]tgbotapi.K
 	return keyboard
 }
 
+// PartOfSpeech returns part of speech keyboard.
 func PartOfSpeech(language Language) *tgbotapi.ReplyKeyboardMarkup {
 	var keyboard tgbotapi.ReplyKeyboardMarkup
 

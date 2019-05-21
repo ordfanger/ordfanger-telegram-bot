@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Constans for chat flow.
 const (
 	ReceivedWord = iota + 1
 	ReceivedLanguage
@@ -14,10 +15,12 @@ const (
 	ReceivedSentences
 )
 
+// Update struct uses for storing telegram message that received.
 type Update struct {
 	Message *tgbotapi.Message
 }
 
+// State struct uses for storing chat state.
 type State struct {
 	Step          int    `json:"step"`
 	UserID        int    `json:"userID"`
@@ -28,6 +31,7 @@ type State struct {
 	UserInputs    Record `json:"user_inputs"`
 }
 
+// Chat struct is the wrapper to all needed objects.
 type Chat struct {
 	Logger     *logrus.Logger
 	Bot        BotAPI
@@ -36,6 +40,7 @@ type Chat struct {
 	State      *State
 }
 
+// Record struct for storing info about word.
 type Record struct {
 	ID           string   `json:"id"`
 	Word         string   `json:"word"`
@@ -44,6 +49,7 @@ type Record struct {
 	Sentences    []string `json:"sentences"`
 }
 
+// DecisionTree handled bot messages flow.
 func (chat *Chat) DecisionTree() *Responses {
 	if chat.Update.Message.IsCommand() {
 		command := chat.Update.Message.Command()
@@ -137,20 +143,24 @@ func (chat *Chat) DecisionTree() *Responses {
 	}
 }
 
+// Send method sends message to telegram.
 func (chat *Chat) Send(response *Responses) {
 	chat.Bot.Send(chat, response)
 }
 
+// GetState returns current chat state.
 func (chat *Chat) GetState() error {
 	err := chat.Connection.GetState(chat)
 	return err
 }
 
+// SaveState saves currect chat state.
 func (chat *Chat) SaveState() error {
 	err := chat.Connection.SaveState(chat)
 	return err
 }
 
+// RecordNewWord saves word information.
 func (chat *Chat) RecordNewWord() {
 	chat.Connection.RecordNewWord(chat)
 }
