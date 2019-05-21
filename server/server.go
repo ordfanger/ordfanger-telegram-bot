@@ -21,8 +21,10 @@ func Server(_ context.Context, req events.APIGatewayProxyRequest) (Response, err
 	botAPIKey := os.Getenv("BOT_API_KEY")
 
 	chatContext := &chat.Chat{
-		Logger:     internal.NewLogger(),
-		Connection: internal.NewDBConnection(),
+		Logger: internal.NewLogger(),
+		Connection: &chat.DB{
+			DynamoDB: internal.NewDBConnection(),
+		},
 	}
 
 	bot, err := tgbotapi.NewBotAPI(botAPIKey)

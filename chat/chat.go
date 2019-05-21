@@ -1,17 +1,8 @@
 package chat
 
 import (
-	"os"
-	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws/session"
-	uuid "github.com/satori/go.uuid"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-
-	"github.com/aws/aws-sdk-go/service/dynamodb"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/sirupsen/logrus"
 )
@@ -22,14 +13,6 @@ const (
 	ReceivedPartOfSpeech
 	ReceivedSentences
 )
-
-type BotAPI interface {
-	Send(chat *Chat, response *Responses)
-}
-
-type Bot struct {
-	*tgbotapi.BotAPI
-}
 
 type Update struct {
 	Message *tgbotapi.Message
@@ -48,7 +31,7 @@ type State struct {
 type Chat struct {
 	Logger     *logrus.Logger
 	Bot        BotAPI
-	Connection *dynamodb.DynamoDB
+	Connection PersistenceLayer
 	Update     *Update
 	State      *State
 }
@@ -159,115 +142,15 @@ func (chat *Chat) Send(response *Responses) {
 }
 
 func (chat *Chat) GetState() error {
-	chatState := &State{}
-
-	params := &dynamodb.QueryInput{
-		TableName:              aws.String(os.Getenv("CHAT_STATE_TABLE")),
-		KeyConditionExpression: aws.String("userID = :userID"),
-		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":userID": {
-				N: aws.String(strconv.Itoa(chat.Update.Message.From.ID)),
-			},
-		},
-	}
-
-	out, err := chat.Connection.Query(params)
-	if err != nil {
-		chat.Logger.Errorf("querying state failed: %v", err.Error())
-		return err
-	}
-
-	if len(out.Items) == 0 {
-		chat.State = &State{
-			Step:          1,
-			UserID:        chat.Update.Message.From.ID,
-			UserFirstName: chat.Update.Message.From.FirstName,
-			UserLastName:  chat.Update.Message.From.LastName,
-			UserName:      chat.Update.Message.From.UserName,
-			ChatID:        chat.Update.Message.Chat.ID,
-			UserInputs:    Record{},
-		}
-
-		return nil
-	}
-
-	for _, item := range out.Items {
-		if err := dynamodbattribute.UnmarshalMap(item, chatState); err != nil {
-			chat.Logger.Errorf("unmarshalMap failed: %v", err.Error())
-			return err
-		}
-	}
-
-	chat.State = chatState
-
-	return nil
+	err := chat.Connection.GetState(chat)
+	return err
 }
 
 func (chat *Chat) SaveState() error {
-	chat.Logger.WithFields(logrus.Fields{"state": chat.State}).Info("saving state")
-
-	av, err := dynamodbattribute.MarshalMap(chat.State)
-	if err != nil {
-		chat.Logger.Errorf("error marshalling state: %v", err.Error())
-		return err
-	}
-
-	input := &dynamodb.PutItemInput{
-		Item:      av,
-		TableName: aws.String(os.Getenv("CHAT_STATE_TABLE")),
-	}
-
-	_, err = chat.Connection.PutItem(input)
-	if err != nil {
-		chat.Logger.Errorf("error while saving state: %v", err.Error())
-		return err
-	}
-
-	return nil
+	err := chat.Connection.SaveState(chat)
+	return err
 }
 
 func (chat *Chat) RecordNewWord() {
-	sess := session.Must(session.NewSession())
-	svc := dynamodb.New(sess)
-
-	uuId := uuid.NewV4()
-
-	record := &Record{
-		ID:           uuId.String(),
-		Word:         chat.State.UserInputs.Word,
-		Language:     chat.State.UserInputs.Language,
-		PartOfSpeech: chat.State.UserInputs.PartOfSpeech,
-		Sentences:    chat.State.UserInputs.Sentences,
-	}
-
-	av, err := dynamodbattribute.MarshalMap(record)
-	if err != nil {
-		chat.Logger.Errorf("error marshalling map: %s", err.Error())
-	}
-
-	input := &dynamodb.PutItemInput{
-		Item:      av,
-		TableName: aws.String(os.Getenv("WORDS_TABLE")),
-	}
-
-	_, err = svc.PutItem(input)
-	if err != nil {
-		chat.Logger.Errorf("can't save the word %s", err.Error())
-	}
-}
-
-func (bot *Bot) Send(chat *Chat, response *Responses) {
-	msg := tgbotapi.NewMessage(chat.State.ChatID, response.Text)
-
-	if response.ReplyKeyboardMarkup != nil {
-		msg.ReplyMarkup = response.ReplyKeyboardMarkup
-	}
-
-	if response.ReplyKeyboardMarkup == nil {
-		msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
-	}
-
-	if _, err := bot.BotAPI.Send(msg); err != nil {
-		chat.Logger.Error(err)
-	}
+	chat.Connection.RecordNewWord(chat)
 }
