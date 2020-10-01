@@ -2,7 +2,10 @@
 Ordfanger Telegram Bot
 </h1>
 
-This bot was created to collect words. You can deploy it in your own AWS lambda and record words for learning purposes. 
+This bot was created to collect words. You can deploy it in your own AWS lambda and record words for learning purposes.
+
+List with supported languages:
+EN, NL
 
 ## Install
 
