@@ -15,6 +15,7 @@ type Message string
 // Supported languages.
 const (
 	EN Language = iota
+	NL
 )
 
 // Bot's response messages.
@@ -47,11 +48,15 @@ var ENPartOfSpeech = []string{
 	"interjection",
 }
 
+var NLPartOfSpeech = []string{}
+
 // GetLanguageFromText returns language type from string.
 func GetLanguageFromText(text string) (Language, error) {
 	switch text {
 	case "EN":
 		return EN, nil
+	case "NL":
+		return NL, nil
 	default:
 		return -1, errors.New("unknown language")
 	}
@@ -63,6 +68,10 @@ func CheckIfPartOfSpeechExists(language Language, partOfSpeech string) bool {
 
 	if language == EN {
 		list = ENPartOfSpeech
+	}
+
+	if language == NL {
+		list = NLPartOfSpeech
 	}
 
 	for _, b := range list {
@@ -78,6 +87,9 @@ func LanguageKeyboard() *tgbotapi.ReplyKeyboardMarkup {
 	keyboard := tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("EN"),
+		),
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("NL"),
 		),
 	)
 
@@ -112,6 +124,13 @@ func PartOfSpeech(language Language) *tgbotapi.ReplyKeyboardMarkup {
 
 	if language == EN {
 		buttons := createPartOfSpeechKeyboard(4, ENPartOfSpeech)
+		keyboard = tgbotapi.NewReplyKeyboard(
+			buttons...,
+		)
+	}
+
+	if language == NL {
+		buttons := createPartOfSpeechKeyboard(4, NLPartOfSpeech)
 		keyboard = tgbotapi.NewReplyKeyboard(
 			buttons...,
 		)
