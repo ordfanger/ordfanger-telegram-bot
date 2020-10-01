@@ -15,7 +15,6 @@ type Message string
 // Supported languages.
 const (
 	EN Language = iota
-	PL
 )
 
 // Bot's response messages.
@@ -48,27 +47,11 @@ var ENPartOfSpeech = []string{
 	"interjection",
 }
 
-// PLPartOfSpeech - defined part of speech for PL language.
-var PLPartOfSpeech = []string{
-	"rzeczownik",
-	"czasownik",
-	"przymiotnik",
-	"liczebnik",
-	"zaimek",
-	"przysłówek",
-	"przyimek",
-	"spójnik",
-	"wykrzyknik",
-	"partykuła",
-}
-
 // GetLanguageFromText returns language type from string.
 func GetLanguageFromText(text string) (Language, error) {
 	switch text {
 	case "EN":
 		return EN, nil
-	case "PL":
-		return PL, nil
 	default:
 		return -1, errors.New("unknown language")
 	}
@@ -80,10 +63,6 @@ func CheckIfPartOfSpeechExists(language Language, partOfSpeech string) bool {
 
 	if language == EN {
 		list = ENPartOfSpeech
-	}
-
-	if language == PL {
-		list = PLPartOfSpeech
 	}
 
 	for _, b := range list {
@@ -99,9 +78,6 @@ func LanguageKeyboard() *tgbotapi.ReplyKeyboardMarkup {
 	keyboard := tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("EN"),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("PL"),
 		),
 	)
 
@@ -136,13 +112,6 @@ func PartOfSpeech(language Language) *tgbotapi.ReplyKeyboardMarkup {
 
 	if language == EN {
 		buttons := createPartOfSpeechKeyboard(4, ENPartOfSpeech)
-		keyboard = tgbotapi.NewReplyKeyboard(
-			buttons...,
-		)
-	}
-
-	if language == PL {
-		buttons := createPartOfSpeechKeyboard(4, PLPartOfSpeech)
 		keyboard = tgbotapi.NewReplyKeyboard(
 			buttons...,
 		)
