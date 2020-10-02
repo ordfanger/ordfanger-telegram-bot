@@ -48,7 +48,17 @@ var ENPartOfSpeech = []string{
 	"interjection",
 }
 
-var NLPartOfSpeech = []string{}
+// NLPartOfSpeech - defined part of speech for NL language.
+var NLPartOfSpeech = []string{
+	"zelfstandig naamwoord",
+	"werkwoord",
+	"bijvoeglijk naamwoord",
+	"voorzetsel",
+	"bijwoord",
+	"voornaamwoord",
+	"conjunctie",
+	"tussenwerpsel",
+}
 
 // GetLanguageFromText returns language type from string.
 func GetLanguageFromText(text string) (Language, error) {
